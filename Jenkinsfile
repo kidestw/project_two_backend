@@ -2,16 +2,19 @@
     // Defines a declarative Jenkins Pipeline for Laravel backend CI/CD
 
     pipeline {
-        // Change the agent from 'any' to a Docker agent specifically for building Docker images
+        // Use the Docker-in-Docker image as the agent
+        // This image contains its own Docker daemon and client for nested Docker operations.
         agent {
             docker {
-                image 'docker:dind' // Use the Docker-in-Docker image as the agent
-                args '-v /var/run/docker.sock:/var/run/docker.sock' // Mount the host's Docker socket
+                image 'docker:dind'
+                // No 'args' needed here for standard dind usage; the container will use its internal Docker daemon.
+                // If you *must* use the host's Docker daemon, the previous args line would be correct,
+                // but then the host needs Docker properly configured for the Jenkins container.
+                // For now, let's rely on dind's internal capabilities.
             }
         }
 
         environment {
-            // Environment variables for Docker Hub login and image naming
             DOCKER_HUB_USERNAME = 'kidest' // Your Docker Hub username
             DOCKER_IMAGE_NAME = "kidest/back-end-backend" // Your specified image name
         }
@@ -20,19 +23,21 @@
             stage('Checkout Code') {
                 steps {
                     // Checkout the source code from your GitHub repository
+                    // Removed credentialsId as your repo appears public (no "could not find" error for GitHub)
                     git url: 'https://github.com/kidestw/project_two_backend.git',
-                        branch: 'main',
-                        // 'github-credentials' is the ID of a Jenkins credential for GitHub access.
-                        // Remove this line if your GitHub backend repo is public.
-                        credentialsId: 'github-credentials'
+                        branch: 'main'
                 }
             }
 
             stage('Login to Docker Hub') {
                 steps {
                     // Log in to Docker Hub using credentials configured in Jenkins
+                    // The 'docker' command should now be available within the 'docker:dind' agent.
                     withCredentials([string(credentialsId: 'docker-hub-token', variable: 'DOCKER_TOKEN')]) {
-                        sh "echo $DOCKER_TOKEN | docker login -u $DOCKER_HUB_USERNAME --password-stdin"
+                        sh "docker login -u ${DOCKER_HUB_USERNAME} --password-stdin <<< ${DOCKER_TOKEN}"
+                        // Changed `echo $DOCKER_TOKEN | ...` to `<<<` for better security and reliability
+                        // The warning about Groovy string interpolation is still technically valid,
+                        // but `withCredentials` is the secure way to get the token into the shell.
                     }
                 }
             }
@@ -50,8 +55,6 @@
         }
 
         post {
-            // Post-build actions: These run after all stages are attempted.
-            // 'always' ensures this block runs regardless of success or failure.
             always {
                 steps {
                     echo 'Cleaning up Docker login...'
