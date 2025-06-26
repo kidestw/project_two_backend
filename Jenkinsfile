@@ -2,54 +2,44 @@
     // Defines a declarative Jenkins Pipeline for Laravel backend CI/CD
 
     pipeline {
-        // Use the Docker-in-Docker image as the agent
-        // This image contains its own Docker daemon and client for nested Docker operations.
         agent {
             docker {
                 image 'docker:dind'
-                // No 'args' needed here for standard dind usage; the container will use its internal Docker daemon.
-                // If you *must* use the host's Docker daemon, the previous args line would be correct,
-                // but then the host needs Docker properly configured for the Jenkins container.
-                // For now, let's rely on dind's internal capabilities.
+                // This 'privileged' flag is often necessary for docker:dind to function correctly,
+                // as it needs full access to manage Docker daemons and containers.
+                // Be aware of security implications in production. For local testing, it's common.
+                args '--privileged'
             }
         }
 
         environment {
-            DOCKER_HUB_USERNAME = 'kidest' // Your Docker Hub username
-            DOCKER_IMAGE_NAME = "kidest/back-end-backend" // Your specified image name
+            DOCKER_HUB_USERNAME = 'kidest'
+            DOCKER_IMAGE_NAME = "kidest/back-end-backend"
         }
 
         stages {
             stage('Checkout Code') {
                 steps {
-                    // Checkout the source code from your GitHub repository
-                    // Removed credentialsId as your repo appears public (no "could not find" error for GitHub)
                     git url: 'https://github.com/kidestw/project_two_backend.git',
                         branch: 'main'
                 }
             }
 
-            stage('Login to Docker Hub') {
-                steps {
-                    // Log in to Docker Hub using credentials configured in Jenkins
-                    // The 'docker' command should now be available within the 'docker:dind' agent.
-                    withCredentials([string(credentialsId: 'docker-hub-token', variable: 'DOCKER_TOKEN')]) {
-                        sh "docker login -u ${DOCKER_HUB_USERNAME} --password-stdin <<< ${DOCKER_TOKEN}"
-                        // Changed `echo $DOCKER_TOKEN | ...` to `<<<` for better security and reliability
-                        // The warning about Groovy string interpolation is still technically valid,
-                        // but `withCredentials` is the secure way to get the token into the shell.
-                    }
-                }
-            }
-
             stage('Build and Push Docker Image') {
                 steps {
-                    // Build the Docker image using the Dockerfile in the current directory (back-end)
-                    sh "docker build -t ${DOCKER_IMAGE_NAME}:latest ."
-                    sh "docker tag ${DOCKER_IMAGE_NAME}:latest ${DOCKER_IMAGE_NAME}:${env.GIT_COMMIT}"
-                    // Push the images to Docker Hub
-                    sh "docker push ${DOCKER_IMAGE_NAME}:latest"
-                    sh "docker push ${DOCKER_IMAGE_NAME}:${env.GIT_COMMIT}"
+                    // Use withDockerRegistry for authenticated Docker operations
+                    // This uses the 'docker-hub-token' credential you configured in Jenkins.
+                    docker.withRegistry("https://registry.hub.docker.com", 'docker-hub-token') {
+                        // Build the Docker image
+                        script {
+                            def customImage = docker.build "${DOCKER_IMAGE_NAME}:latest", "."
+                            // Tag with commit SHA
+                            customImage.tag("${DOCKER_IMAGE_NAME}:${env.GIT_COMMIT}")
+                            // Push both tags
+                            customImage.push()
+                            customImage.push("${env.GIT_COMMIT}")
+                        }
+                    }
                 }
             }
         }
@@ -57,8 +47,9 @@
         post {
             always {
                 steps {
-                    echo 'Cleaning up Docker login...'
-                    sh 'docker logout' // Always log out from Docker Hub
+                    echo 'Cleaning up Docker login (handled by withDockerRegistry).'
+                    // Explicit docker logout is not strictly necessary here as withDockerRegistry manages session
+                    // but keeping a placeholder echo to indicate clean-up is intended.
                 }
             }
             success {
