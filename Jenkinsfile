@@ -2,7 +2,13 @@
     // Defines a declarative Jenkins Pipeline for Laravel backend CI/CD
 
     pipeline {
-        agent any // The Jenkins agent where this pipeline will run
+        // Change the agent from 'any' to a Docker agent specifically for building Docker images
+        agent {
+            docker {
+                image 'docker:dind' // Use the Docker-in-Docker image as the agent
+                args '-v /var/run/docker.sock:/var/run/docker.sock' // Mount the host's Docker socket
+            }
+        }
 
         environment {
             // Environment variables for Docker Hub login and image naming
@@ -25,7 +31,6 @@
             stage('Login to Docker Hub') {
                 steps {
                     // Log in to Docker Hub using credentials configured in Jenkins
-                    // You need to create a Jenkins 'Secret Text' credential named 'docker-hub-token'
                     withCredentials([string(credentialsId: 'docker-hub-token', variable: 'DOCKER_TOKEN')]) {
                         sh "echo $DOCKER_TOKEN | docker login -u $DOCKER_HUB_USERNAME --password-stdin"
                     }
@@ -48,8 +53,7 @@
             // Post-build actions: These run after all stages are attempted.
             // 'always' ensures this block runs regardless of success or failure.
             always {
-                // All steps within a post-condition block must be wrapped in a 'steps' block
-                steps { // <--- THIS IS THE FIX
+                steps {
                     echo 'Cleaning up Docker login...'
                     sh 'docker logout' // Always log out from Docker Hub
                 }
