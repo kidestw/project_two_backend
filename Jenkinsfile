@@ -5,9 +5,6 @@
         agent {
             docker {
                 image 'docker:dind'
-                // This 'privileged' flag is often necessary for docker:dind to function correctly,
-                // as it needs full access to manage Docker daemons and containers.
-                // Be aware of security implications in production. For local testing, it's common.
                 args '--privileged'
             }
         }
@@ -27,19 +24,15 @@
 
             stage('Build and Push Docker Image') {
                 steps {
-                    // Use withDockerRegistry for authenticated Docker operations
-                    // This uses the 'docker-hub-token' credential you configured in Jenkins.
-                    docker.withRegistry("https://registry.hub.docker.com", 'docker-hub-token') {
-                        // Build the Docker image
-                        script {
+                    // Wrap docker.withRegistry in a script block
+                    script { // <--- ADDED THIS SCRIPT BLOCK
+                        docker.withRegistry("https://registry.hub.docker.com", 'docker-hub-token') {
                             def customImage = docker.build "${DOCKER_IMAGE_NAME}:latest", "."
-                            // Tag with commit SHA
                             customImage.tag("${DOCKER_IMAGE_NAME}:${env.GIT_COMMIT}")
-                            // Push both tags
                             customImage.push()
                             customImage.push("${env.GIT_COMMIT}")
                         }
-                    }
+                    } // <--- END OF SCRIPT BLOCK
                 }
             }
         }
@@ -48,8 +41,6 @@
             always {
                 steps {
                     echo 'Cleaning up Docker login (handled by withDockerRegistry).'
-                    // Explicit docker logout is not strictly necessary here as withDockerRegistry manages session
-                    // but keeping a placeholder echo to indicate clean-up is intended.
                 }
             }
             success {
