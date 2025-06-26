@@ -16,13 +16,16 @@
                     // Checkout the source code from your GitHub repository
                     git url: 'https://github.com/kidestw/project_two_backend.git',
                         branch: 'main',
-                        credentialsId: 'github-credentials' // Remove if your GitHub backend repo is public
+                        // 'github-credentials' is the ID of a Jenkins credential for GitHub access.
+                        // Remove this line if your GitHub backend repo is public.
+                        credentialsId: 'github-credentials'
                 }
             }
 
             stage('Login to Docker Hub') {
                 steps {
                     // Log in to Docker Hub using credentials configured in Jenkins
+                    // You need to create a Jenkins 'Secret Text' credential named 'docker-hub-token'
                     withCredentials([string(credentialsId: 'docker-hub-token', variable: 'DOCKER_TOKEN')]) {
                         sh "echo $DOCKER_TOKEN | docker login -u $DOCKER_HUB_USERNAME --password-stdin"
                     }
@@ -39,14 +42,14 @@
                     sh "docker push ${DOCKER_IMAGE_NAME}:${env.GIT_COMMIT}"
                 }
             }
-            // Removed the "Clean Up Docker Login" stage from here
         }
 
         post {
             // Post-build actions: These run after all stages are attempted.
             // 'always' ensures this block runs regardless of success or failure.
             always {
-                steps {
+                // All steps within a post-condition block must be wrapped in a 'steps' block
+                steps { // <--- THIS IS THE FIX
                     echo 'Cleaning up Docker login...'
                     sh 'docker logout' // Always log out from Docker Hub
                 }
