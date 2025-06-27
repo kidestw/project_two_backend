@@ -20,15 +20,13 @@
             stage('Build and Push Docker Image') {
                 steps {
                     script {
-                        // Explicitly retrieve the credential using withCredentials
-                        withCredentials([string(credentialsId: 'docker-hub-token', variable: 'DOCKER_TOKEN_SECRET')]) {
-                            // Now pass the retrieved token to docker.withRegistry
-                            docker.withRegistry("https://registry.hub.docker.com", DOCKER_TOKEN_SECRET) {
-                                def customImage = docker.build "${DOCKER_IMAGE_NAME}:latest", "."
-                                customImage.tag("${DOCKER_IMAGE_NAME}:${env.GIT_COMMIT}")
-                                customImage.push()
-                                customImage.push("${env.GIT_COMMIT}")
-                            }
+                        // Use withDockerRegistry for authenticated Docker operations.
+                        // The second argument is the ID of the credential in Jenkins, NOT the secret value.
+                        docker.withRegistry("https://registry.hub.docker.com", 'docker-hub-token') {
+                            def customImage = docker.build "${DOCKER_IMAGE_NAME}:latest", "."
+                            customImage.tag("${DOCKER_IMAGE_NAME}:${env.GIT_COMMIT}")
+                            customImage.push()
+                            customImage.push("${env.GIT_COMMIT}")
                         }
                     }
                 }
