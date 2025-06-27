@@ -17,17 +17,28 @@
                 }
             }
 
+            stage('Login to Docker Hub') {
+                steps {
+                    script {
+                        // Use withCredentials to get the Docker Hub token as an environment variable
+                        withCredentials([string(credentialsId: 'docker-hub-token', variable: 'DOCKER_TOKEN')]) {
+                            // Perform docker login using the token.
+                            // The '<<< ${DOCKER_TOKEN}' syntax securely passes the token to stdin.
+                            sh "docker login -u ${DOCKER_HUB_USERNAME} --password-stdin <<< ${DOCKER_TOKEN}"
+                        }
+                    }
+                }
+            }
+
             stage('Build and Push Docker Image') {
                 steps {
                     script {
-                        // Use withDockerRegistry for authenticated Docker operations.
-                        // The second argument is the ID of the credential in Jenkins, NOT the secret value.
-                        docker.withRegistry("https://registry.hub.docker.com", 'docker-hub-token') {
-                            def customImage = docker.build "${DOCKER_IMAGE_NAME}:latest", "."
-                            customImage.tag("${DOCKER_IMAGE_NAME}:${env.GIT_COMMIT}")
-                            customImage.push()
-                            customImage.push("${env.GIT_COMMIT}")
-                        }
+                        // Build the Docker image
+                        sh "docker build -t ${DOCKER_IMAGE_NAME}:latest ."
+                        sh "docker tag ${DOCKER_IMAGE_NAME}:latest ${DOCKER_IMAGE_NAME}:${env.GIT_COMMIT}"
+                        // Push the images to Docker Hub
+                        sh "docker push ${DOCKER_IMAGE_NAME}:latest"
+                        sh "docker push ${DOCKER_IMAGE_NAME}:${env.GIT_COMMIT}"
                     }
                 }
             }
@@ -36,7 +47,9 @@
         post {
             always {
                 steps {
-                    echo 'Cleaning up Docker login (handled by withDockerRegistry).'
+                    echo 'Cleaning up Docker login...'
+                    // Explicitly logout from Docker Hub
+                    sh 'docker logout'
                 }
             }
             success {
