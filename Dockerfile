@@ -5,6 +5,24 @@ FROM composer:2.7 as composer_builder
 # Set the working directory inside the container
 WORKDIR /app
 
+# Install necessary PHP extensions in the composer_builder stage
+# This ensures Composer can resolve dependencies that require these extensions
+RUN apk add --no-cache \
+        libzip-dev \
+        libpng-dev \
+        libjpeg-turbo-dev \
+        freetype-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j$(nproc) \
+        gd \
+        exif \
+        pdo_mysql \
+        bcmath \
+        opcache \
+        pcntl \
+        zip \
+    && rm -rf /tmp/* /var/cache/apk/*
+
 # Copy composer.json and composer.lock to leverage Docker's caching
 COPY composer.json composer.lock ./
 
@@ -21,21 +39,13 @@ FROM php:8.3-fpm-alpine
 # Set the working directory for the application
 WORKDIR /var/www/html
 
-# Install necessary PHP extensions required by your Laravel application
-# gd: Required by phpoffice/phpspreadsheet for image manipulation
-# exif: Required by spatie/image and spatie/laravel-medialibrary for EXIF data handling
-# pdo_mysql: Common for Laravel applications to connect to MySQL databases
-# bcmath: Often used in Laravel for arbitrary precision mathematics
-# opcache: Improves PHP performance by caching precompiled script bytecode
-# pcntl: Process control support (useful for Laravel Queue workers)
-# zip: For handling zip archives (e.g., by phpoffice/phpspreadsheet)
+# Install necessary PHP extensions in the final stage (even though Composer checked them)
+# This ensures the runtime environment has the necessary extensions
 RUN apk add --no-cache \
         libzip-dev \
         libpng-dev \
         libjpeg-turbo-dev \
         freetype-dev \
-        # Install other necessary system packages for PHP extensions
-        # Example: if you need other extensions, add their dependencies here
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j$(nproc) \
         gd \
