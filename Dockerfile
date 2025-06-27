@@ -7,6 +7,7 @@ WORKDIR /app
 
 # Install necessary PHP extensions in the composer_builder stage
 # This ensures Composer can resolve dependencies that require these extensions
+# Note: composer:2.7 image is based on Alpine, so apk is used.
 RUN apk add --no-cache \
         libzip-dev \
         libpng-dev \
