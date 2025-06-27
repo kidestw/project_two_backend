@@ -2,12 +2,7 @@
     // Defines a declarative Jenkins Pipeline for Laravel backend CI/CD
 
     pipeline {
-        agent {
-            docker {
-                image 'docker:dind'
-                args '--privileged'
-            }
-        }
+        agent any // Use 'any' agent, as the Docker client is now available in the custom Jenkins image
 
         environment {
             DOCKER_HUB_USERNAME = 'kidest'
@@ -24,15 +19,16 @@
 
             stage('Build and Push Docker Image') {
                 steps {
-                    // Wrap docker.withRegistry in a script block
-                    script { // <--- ADDED THIS SCRIPT BLOCK
+                    script {
+                        // Docker commands should now work directly as the DOCKER_HOST env var is set
+                        // and the Docker client is installed in the custom Jenkins image.
                         docker.withRegistry("https://registry.hub.docker.com", 'docker-hub-token') {
                             def customImage = docker.build "${DOCKER_IMAGE_NAME}:latest", "."
                             customImage.tag("${DOCKER_IMAGE_NAME}:${env.GIT_COMMIT}")
                             customImage.push()
                             customImage.push("${env.GIT_COMMIT}")
                         }
-                    } // <--- END OF SCRIPT BLOCK
+                    }
                 }
             }
         }
