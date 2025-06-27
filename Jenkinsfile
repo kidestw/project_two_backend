@@ -23,8 +23,10 @@
                         // Use withCredentials to get the Docker Hub token as an environment variable
                         withCredentials([string(credentialsId: 'docker-hub-token', variable: 'DOCKER_TOKEN')]) {
                             // Perform docker login using the token.
-                            // The '<<< ${DOCKER_TOKEN}' syntax securely passes the token to stdin.
-                            sh "docker login -u ${DOCKER_HUB_USERNAME} --password-stdin <<< ${DOCKER_TOKEN}"
+                            // Explicitly use 'bash' for the '<<<` (here string) operator.
+                            sh script: "docker login -u ${DOCKER_HUB_USERNAME} --password-stdin <<< ${DOCKER_TOKEN}",
+                                     returnStdout: true,
+                                     encoding: 'UTF-8' // Ensure correct encoding
                         }
                     }
                 }
