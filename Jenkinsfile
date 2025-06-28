@@ -7,7 +7,6 @@ pipeline {
     environment {
         DOCKER_HUB_USERNAME = 'kidest'
         DOCKER_IMAGE_NAME = "kidest/back-end-backend"
-        // DOCKER_HOST = 'tcp://host.docker.internal:23750' // REMOVE THIS LINE from here
     }
 
     stages {
@@ -41,15 +40,24 @@ pipeline {
 
         stage('Build and Push Docker Image') {
             steps {
-                // ADD withEnv BLOCK HERE
-                withEnv(["DOCKER_HOST=tcp://host.docker.internal:23750"]) { // <--- ADD THIS BLOCK
+                withEnv(["DOCKER_HOST=tcp://host.docker.internal:23750"]) {
                     script {
                         sh "docker build -t ${DOCKER_IMAGE_NAME}:latest ."
+
+                        // Tagging the image
                         sh "docker tag ${DOCKER_IMAGE_NAME}:latest ${DOCKER_IMAGE_NAME}:${env.GIT_COMMIT}"
-                        sh "docker push ${DOCKER_IMAGE_NAME}:latest"
-                        sh "docker push ${DOCKER_IMAGE_NAME}:${env.GIT_COMMIT}"
+
+                        // Retry block for pushes
+                        retry(3) { // Retry up to 3 times
+                            echo "Attempting to push ${DOCKER_IMAGE_NAME}:latest"
+                            sh "docker push ${DOCKER_IMAGE_NAME}:latest"
+                        }
+                        retry(3) { // Retry up to 3 times
+                            echo "Attempting to push ${DOCKER_IMAGE_NAME}:${env.GIT_COMMIT}"
+                            sh "docker push ${DOCKER_IMAGE_NAME}:${env.GIT_COMMIT}"
+                        }
                     }
-                } // <--- CLOSE withEnv BLOCK HERE
+                }
             }
         }
     }
@@ -58,8 +66,7 @@ pipeline {
         always {
             steps {
                 echo 'Cleaning up Docker login...'
-                // Ensure DOCKER_HOST is also set for logout
-                withEnv(["DOCKER_HOST=tcp://host.docker.internal:23750"]) { // <--- ADD THIS BLOCK for logout
+                withEnv(["DOCKER_HOST=tcp://host.docker.internal:23750"]) {
                     sh 'docker logout'
                 }
             }
