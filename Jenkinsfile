@@ -40,11 +40,10 @@ pipeline {
 
         stage('Build and Push Docker Image') {
             steps {
-                // ADD DOCKER_CLIENT_TIMEOUT and COMPOSE_HTTP_TIMEOUT here
                 withEnv([
                     "DOCKER_HOST=tcp://host.docker.internal:23750",
-                    "DOCKER_CLIENT_TIMEOUT=300", // Set Docker client timeout to 300 seconds (5 minutes)
-                    "COMPOSE_HTTP_TIMEOUT=300"    // Also for Docker Compose, good practice
+                    "DOCKER_CLIENT_TIMEOUT=600", // Increased to 600 seconds (10 minutes)
+                    "COMPOSE_HTTP_TIMEOUT=600"    // Increased to 600 seconds (10 minutes)
                 ]) {
                     script {
                         sh "docker build -t ${DOCKER_IMAGE_NAME}:latest ."
@@ -73,8 +72,8 @@ pipeline {
                 echo 'Cleaning up Docker login...'
                 withEnv([
                     "DOCKER_HOST=tcp://host.docker.internal:23750",
-                    "DOCKER_CLIENT_TIMEOUT=300",
-                    "COMPOSE_HTTP_TIMEOUT=300"
+                    "DOCKER_CLIENT_TIMEOUT=600",
+                    "COMPOSE_HTTP_TIMEOUT=600"
                 ]) {
                     sh 'docker logout'
                 }
