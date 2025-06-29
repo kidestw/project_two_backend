@@ -46,9 +46,8 @@ pipeline {
                     "COMPOSE_HTTP_TIMEOUT=600"    // Increased to 600 seconds (10 minutes)
                 ]) {
                     script {
-                        // --- REMOVED 'sudo' FROM THIS LINE ---
-                        sh 'ip link set dev eth0 mtu 1400' // Set MTU for eth0 inside the container
-                        // ------------------------------------
+                        // --- REMOVED THE 'ip link set' COMMAND ENTIRELY ---
+                        // sh 'ip link set dev eth0 mtu 1400' // This line is removed
 
                         sh "docker build -t ${DOCKER_IMAGE_NAME}:latest ."
 
