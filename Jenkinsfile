@@ -46,8 +46,7 @@ pipeline {
                     "COMPOSE_HTTP_TIMEOUT=600"    // Increased to 600 seconds (10 minutes)
                 ]) {
                     script {
-                        // --- REMOVED THE 'ip link set' COMMAND ENTIRELY ---
-                        // sh 'ip link set dev eth0 mtu 1400' // This line is removed
+                        // The 'ip link set' command was removed in the previous step, which is correct.
 
                         sh "docker build -t ${DOCKER_IMAGE_NAME}:latest ."
 
@@ -71,15 +70,14 @@ pipeline {
 
     post {
         always {
-            steps {
-                echo 'Cleaning up Docker login...'
-                withEnv([
-                    "DOCKER_HOST=tcp://host.docker.internal:23750",
-                    "DOCKER_CLIENT_TIMEOUT=600",
-                    "COMPOSE_HTTP_TIMEOUT=600"
-                ]) {
-                    sh 'docker logout'
-                }
+            // REMOVED 'steps' BLOCK HERE - commands go directly here
+            echo 'Cleaning up Docker login...'
+            withEnv([
+                "DOCKER_HOST=tcp://host.docker.internal:23750",
+                "DOCKER_CLIENT_TIMEOUT=600",
+                "COMPOSE_HTTP_TIMEOUT=600"
+            ]) {
+                sh 'docker logout'
             }
         }
         success {
