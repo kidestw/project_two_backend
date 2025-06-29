@@ -46,6 +46,10 @@ pipeline {
                     "COMPOSE_HTTP_TIMEOUT=600"    // Increased to 600 seconds (10 minutes)
                 ]) {
                     script {
+                        // --- ADD THIS LINE TO SET MTU INSIDE JENKINS CONTAINER ---
+                        sh 'sudo ip link set dev eth0 mtu 1400' // Set MTU for eth0 inside the container
+                        // --------------------------------------------------------
+
                         sh "docker build -t ${DOCKER_IMAGE_NAME}:latest ."
 
                         // Tagging the image
