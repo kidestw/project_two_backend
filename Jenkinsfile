@@ -4,7 +4,7 @@
 
 pipeline {
     // Agent: Specifies where the pipeline will run.
-    // 'any' means Jenkins will pick any available agent. Ensure this agent has Docker and Docker Compose installed.
+    // 'any' means Jenkins will pick any available agent. Ensure this agent has Docker installed.
     agent any
 
     // Environment variables that will be available throughout the pipeline.
@@ -67,8 +67,8 @@ pipeline {
                 ]) {
                     script {
                         echo "Building Docker image: ${DOCKER_IMAGE_NAME}:latest"
-                        // Build the Docker image. The context is now '.' because the Dockerfile is at the root.
-                        sh "docker build -t ${DOCKER_IMAGE_NAME}:latest ." // <-- CRITICAL FIX: Changed context to '.'
+                        // Build the Docker image. The context is '.' because the Dockerfile is at the root.
+                        sh "docker build -t ${DOCKER_IMAGE_NAME}:latest ."
 
                         echo "Tagging Docker image with Git commit: ${DOCKER_IMAGE_NAME}:${env.GIT_COMMIT}"
                         sh "docker tag ${DOCKER_IMAGE_NAME}:latest ${DOCKER_IMAGE_NAME}:${env.GIT_COMMIT}"
@@ -165,10 +165,12 @@ pipeline {
                     """
 
                     echo "Stopping and removing old Docker Compose services..."
-                    sh 'docker-compose down --remove-orphans'
+                    // Run docker-compose down inside a container
+                    sh 'docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$(pwd)":/app docker/compose:latest -f /app/docker-compose.yml down --remove-orphans'
 
                     echo "Starting new Docker Compose services..."
-                    sh 'docker-compose up -d --build'
+                    // Run docker-compose up inside a container
+                    sh 'docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$(pwd)":/app docker/compose:latest -f /app/docker-compose.yml up -d --build'
                 }
             }
         }
