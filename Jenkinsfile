@@ -172,13 +172,13 @@ pipeline {
                         echo "Stopping and removing old Docker Compose services..."
                         # Run docker-compose down inside a container, explicitly passing DOCKER_HOST.
                         # Using docker/compose:1.29.2 for stability and hyphenated syntax.
-                        # Removed line continuation backslashes and comments to ensure correct shell parsing.
-                        docker run --rm --env DOCKER_HOST="tcp://host.docker.internal:23750" --volume "\$(pwd)":/app docker/compose:1.29.2 docker-compose -f /app/docker-compose.yml down --remove-orphans
+                        # Removed redundant 'docker-compose' command after image name.
+                        docker run --rm --env DOCKER_HOST="tcp://host.docker.internal:23750" --volume "\$(pwd)":/app docker/compose:1.29.2 -f /app/docker-compose.yml down --remove-orphans
 
                         echo "Starting new Docker Compose services..."
                         # Run docker-compose up inside a container, explicitly passing DOCKER_HOST.
-                        # Removed line continuation backslashes and comments to ensure correct shell parsing.
-                        docker run --rm --env DOCKER_HOST="tcp://host.docker.internal:23750" --volume "\$(pwd)":/app docker/compose:1.29.2 docker-compose -f /app/docker-compose.yml up -d --build
+                        # Removed redundant 'docker-compose' command after image name.
+                        docker run --rm --env DOCKER_HOST="tcp://host.docker.internal:23750" --volume "\$(pwd)":/app docker/compose:1.29.2 -f /app/docker-compose.yml up -d --build
                     """
                 }
             }
