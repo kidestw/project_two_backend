@@ -91,10 +91,15 @@ pipeline {
         stage('Deploy Services') {
             steps {
                 script {
-                    // Commands run directly from the repository root.
-                    echo "Creating/Updating .env file for deployment..."
-                    // Dynamically create the .env file in the repository root.
-                    sh """
+                    // Enable shell debugging to see executed commands and their environment
+                    sh """#!/bin/bash
+                        set -x # This will print each command before it's executed
+
+                        echo "Current directory: $(pwd)"
+                        echo "DOCKER_HOST value for this stage: ${DOCKER_HOST}" # This will be empty here, as it's not in this stage's default env
+
+                        echo "Creating/Updating .env file for deployment..."
+                        # Dynamically create the .env file in the repository root.
                         echo "APP_NAME=\\"CLMS\\"" > .env
                         echo "APP_ENV=local" >> .env
                         echo "APP_KEY=base64:rdyVG8KM7Owniz6O7ypo//7vkb2Y3yvI+ASiRZljCD8=" >> .env
@@ -163,15 +168,26 @@ pipeline {
 
                         echo "VITE_APP_NAME=\\"CLMS\\"" >> .env
                         echo "WKHTML_PDF_BINARY=\\"/usr/local/bin/wkhtmltopdf\\"" >> .env
+
+                        echo "Stopping and removing old Docker Compose services..."
+                        # Run docker-compose down inside a container, explicitly passing DOCKER_HOST.
+                        # Using docker/compose:1.29.2 for stability and hyphenated syntax.
+                        docker run --rm \\
+                            --env DOCKER_HOST="tcp://host.docker.internal:23750" \\
+                            --volume "$(pwd)":/app \\
+                            docker/compose:1.29.2 \\
+                            docker-compose -f /app/docker-compose.yml \\
+                            down --remove-orphans
+
+                        echo "Starting new Docker Compose services..."
+                        # Run docker-compose up inside a container, explicitly passing DOCKER_HOST.
+                        docker run --rm \\
+                            --env DOCKER_HOST="tcp://host.docker.internal:23750" \\
+                            --volume "$(pwd)":/app \\
+                            docker/compose:1.29.2 \\
+                            docker-compose -f /app/docker-compose.yml \\
+                            up -d --build
                     """
-
-                    echo "Stopping and removing old Docker Compose services..."
-                    // Run docker-compose down inside a container, passing DOCKER_HOST to it.
-                    sh 'docker run --rm -e DOCKER_HOST=${DOCKER_HOST} -v "$(pwd)":/app docker/compose:latest -f /app/docker-compose.yml down --remove-orphans'
-
-                    echo "Starting new Docker Compose services..."
-                    // Run docker-compose up inside a container, passing DOCKER_HOST to it.
-                    sh 'docker run --rm -e DOCKER_HOST=${DOCKER_HOST} -v "$(pwd)":/app docker/compose:latest -f /app/docker-compose.yml up -d --build'
                 }
             }
         }
@@ -185,6 +201,7 @@ pipeline {
                     sh 'sleep 20'
 
                     echo "Running Laravel database migrations..."
+                    // DOCKER_HOST is not needed for docker exec as it operates on already running containers
                     sh 'docker exec clms_laravel_php_fpm php artisan migrate --force'
 
                     echo "Clearing and caching Laravel configurations, routes, and views..."
