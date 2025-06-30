@@ -61,6 +61,7 @@ pipeline {
         stage('Build and Push Docker Image') {
             steps {
                 withEnv([
+                    // DOCKER_HOST is needed here for 'docker build' to connect to the Docker Desktop daemon
                     "DOCKER_HOST=tcp://host.docker.internal:23750",
                     "DOCKER_CLIENT_TIMEOUT=600",
                     "COMPOSE_HTTP_TIMEOUT=600"
@@ -164,12 +165,19 @@ pipeline {
                         echo "WKHTML_PDF_BINARY=\\"/usr/local/bin/wkhtmltopdf\\"" >> .env
                     """
 
+                    // --- DIAGNOSTIC STEP ---
+                    echo "Checking permissions on /var/run/docker.sock:"
+                    sh 'ls -l /var/run/docker.sock'
+                    // --- END DIAGNOSTIC STEP ---
+
                     echo "Stopping and removing old Docker Compose services..."
-                    // Run docker-compose down inside a container
+                    // Run docker-compose down inside a container.
+                    // IMPORTANT: DOCKER_HOST is NOT set here, as the mounted socket is used.
                     sh 'docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$(pwd)":/app docker/compose:latest -f /app/docker-compose.yml down --remove-orphans'
 
                     echo "Starting new Docker Compose services..."
-                    // Run docker-compose up inside a container
+                    // Run docker-compose up inside a container.
+                    // IMPORTANT: DOCKER_HOST is NOT set here.
                     sh 'docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$(pwd)":/app docker/compose:latest -f /app/docker-compose.yml up -d --build'
                 }
             }
@@ -205,6 +213,7 @@ pipeline {
         always {
             echo 'Cleaning up Docker login...'
             withEnv([
+                // DOCKER_HOST is still needed here for 'docker logout' to connect to the Docker Desktop daemon
                 "DOCKER_HOST=tcp://host.docker.internal:23750",
                 "DOCKER_CLIENT_TIMEOUT=600",
                 "COMPOSE_HTTP_TIMEOUT=600"
