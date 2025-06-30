@@ -1,77 +1,236 @@
-// C:\Users\User\Desktop\project_two\back-end\Jenkinsfile
-// Defines a declarative Jenkins Pipeline for Laravel backend CI/CD
+// Jenkinsfile for Laravel Backend CI/CD Pipeline
+// This pipeline automates the building, pushing, and deployment of your Dockerized Laravel backend.
 
+// Define the overall pipeline
 pipeline {
-    agent any // Use 'any' agent on the Jenkins controller itself
+    // Agent: Specifies where the pipeline will run.
+    // 'any' means Jenkins will pick any available agent. Ensure this agent has Docker and Docker Compose installed.
+    agent any
 
+    // Environment variables that will be available throughout the pipeline.
     environment {
+        // Your Docker Hub username for pushing images.
         DOCKER_HUB_USERNAME = 'kidest'
+        // The name for your Docker image on Docker Hub.
         DOCKER_IMAGE_NAME = "kidest/back-end-backend"
+        // GIT_COMMIT is a built-in Jenkins environment variable that holds the current Git commit hash.
+        // It's used for tagging images for better versioning.
     }
 
+    // Stages: Define the distinct steps of your CI/CD process.
     stages {
+        // Stage 1: Checkout Code from Git Repository
         stage('Checkout Code') {
             steps {
                 script {
-                    // Configure Git to bypass SSL verification (for troubleshooting)
-                    // WARNING: Do NOT use this in production unless you understand the security implications.
+                    // --- WARNING: SECURITY RISK ---
+                    // These Git configurations are for troubleshooting and development environments
+                    // where you might encounter SSL certificate issues or large repository sizes.
+                    // For production, it's highly recommended to properly configure SSL certificates
+                    // and optimize repository size rather than bypassing SSL verification.
+                    echo "Configuring Git to bypass SSL verification and increase post buffer..."
                     sh 'git config --global http.sslVerify false'
-                    // Increase Git's HTTP post buffer to handle large objects
                     sh 'git config --global http.postBuffer 524288000' // 500 MB
                 }
+                // Pull your backend code from the specified Git repository and branch.
+                // Ensure this URL is correct and accessible by Jenkins.
                 git url: 'https://github.com/kidestw/project_two_backend.git',
                     branch: 'main'
             }
         }
 
+        // Stage 2: Login to Docker Hub
         stage('Login to Docker Hub') {
             steps {
                 script {
+                    // Use Jenkins Credentials to securely access your Docker Hub token/password.
+                    // The 'credentialsId' must match the ID of the Secret Text credential you set up in Jenkins.
                     withCredentials([string(credentialsId: 'docker-hub-token', variable: 'DOCKER_TOKEN')]) {
+                        echo "Logging in to Docker Hub..."
+                        // Use a bash script to pipe the token to docker login's --password-stdin for security.
                         sh script: """#!/bin/bash
                             docker login -u ${DOCKER_HUB_USERNAME} --password-stdin <<< "${DOCKER_TOKEN}"
                         """,
-                            returnStdout: true,
-                            encoding: 'UTF-8'
+                            returnStdout: true, // Capture output for debugging if needed
+                            encoding: 'UTF-8' // Ensure correct character encoding
                     }
                 }
             }
         }
 
+        // Stage 3: Build and Push Docker Image
         stage('Build and Push Docker Image') {
             steps {
+                // Set environment variables for Docker commands.
+                // DOCKER_HOST=tcp://host.docker.internal:23750 is crucial for Jenkins running inside Docker
+                // to communicate with the Docker daemon on the host (Docker Desktop).
+                // Timeouts are increased for potentially large builds/pushes.
                 withEnv([
                     "DOCKER_HOST=tcp://host.docker.internal:23750",
-                    "DOCKER_CLIENT_TIMEOUT=600", // Increased to 600 seconds (10 minutes)
-                    "COMPOSE_HTTP_TIMEOUT=600"    // Increased to 600 seconds (10 minutes)
+                    "DOCKER_CLIENT_TIMEOUT=600", // 10 minutes
+                    "COMPOSE_HTTP_TIMEOUT=600"    // 10 minutes
                 ]) {
                     script {
-                        // The 'ip link set' command was removed in the previous step, which is correct.
+                        echo "Building Docker image: ${DOCKER_IMAGE_NAME}:latest"
+                        // Build the Docker image for your backend.
+                        // The context './back-end' assumes your Dockerfile for the backend
+                        // is located in a 'back-end' subdirectory relative to the repository root.
+                        sh "docker build -t ${DOCKER_IMAGE_NAME}:latest ./back-end"
 
-                        sh "docker build -t ${DOCKER_IMAGE_NAME}:latest ."
-
-                        // Tagging the image
+                        echo "Tagging Docker image with Git commit: ${DOCKER_IMAGE_NAME}:${env.GIT_COMMIT}"
+                        // Tag the image with the current Git commit hash for specific version tracking.
                         sh "docker tag ${DOCKER_IMAGE_NAME}:latest ${DOCKER_IMAGE_NAME}:${env.GIT_COMMIT}"
 
-                        // Retry block for pushes
+                        // Retry blocks for pushing images to Docker Hub to handle transient network issues.
                         retry(3) { // Retry up to 3 times
-                            echo "Attempting to push ${DOCKER_IMAGE_NAME}:latest"
+                            echo "Attempting to push ${DOCKER_IMAGE_NAME}:latest..."
                             sh "docker push ${DOCKER_IMAGE_NAME}:latest"
                         }
                         retry(3) { // Retry up to 3 times
-                            echo "Attempting to push ${DOCKER_IMAGE_NAME}:${env.GIT_COMMIT}"
+                            echo "Attempting to push ${DOCKER_IMAGE_NAME}:${env.GIT_COMMIT}..."
                             sh "docker push ${DOCKER_IMAGE_NAME}:${env.GIT_COMMIT}"
                         }
                     }
                 }
             }
         }
+
+        // Stage 4: Deploy Services using Docker Compose
+        stage('Deploy Services') {
+            steps {
+                script {
+                    // This 'dir' block ensures all subsequent commands run from the root of your
+                    // Git repository, where your 'docker-compose.yml' file is expected to be.
+                    dir(pwd()) { // pwd() returns the current workspace directory
+                        echo "Creating/Updating .env file for deployment..."
+                        // Dynamically create the .env file with the correct configurations.
+                        // This file will now be the primary source of truth for Laravel's environment variables.
+                        // IMPORTANT: For production, DB_PASSWORD should be a Jenkins credential,
+                        // not empty or hardcoded.
+                        sh """
+                            echo "APP_NAME=\\"CLMS\\"" > .env
+                            echo "APP_ENV=local" >> .env # Set to 'local' for your Docker Desktop environment
+                            echo "APP_KEY=base64:rdyVG8KM7Owniz6O7ypo//7vkb2Y3yvI+ASiRZljCD8=" >> .env # Use your actual generated APP_KEY
+                            echo "APP_DEBUG=true" >> .env # Keep true for debugging, set to 'false' for production
+
+                            echo "APP_TIMEZONE=UTC" >> .env
+                            echo "APP_URL=" >> .env # Can be left empty or set to your public URL if applicable
+                            echo "APP_FRONTEND_URL=\\"http://localhost:3000\\"" >> .env
+                            echo "FRONTEND_URL=\\"http://localhost:3000\\"" >> .env
+
+                            echo "APP_LOCALE=en" >> .env
+                            echo "APP_FALLBACK_LOCALE=en" >> .env
+                            echo "APP_FAKER_LOCALE=en_US" >> .env
+
+                            echo "PHP_CLI_SERVER_WORKERS=4" >> .env
+                            echo "BCRYPT_ROUNDS=12" >> .env
+
+                            echo "LOG_CHANNEL=stack" >> .env
+                            echo "LOG_STACK=single" >> .env
+                            echo "LOG_DEPRECATIONS_CHANNEL=null" >> .env
+                            echo "LOG_LEVEL=debug" >> .env
+
+                            echo "DB_CONNECTION=mysql" >> .env
+                            echo "DB_HOST=clms_mysql_database" >> .env # <-- CRITICAL FIX: Use Docker Compose service name
+                            echo "DB_PORT=3306" >> .env
+                            echo "DB_DATABASE=clms_db" >> .env
+                            echo "DB_USERNAME=root" >> .env
+                            echo "DB_PASSWORD=" >> .env # Ensure this matches your MySQL root password (empty in your case)
+                                                          # For production, use: echo "DB_PASSWORD=\\"${env.YOUR_DB_PASSWORD_CREDENTIAL_ID}\\"" >> .env
+
+                            echo "SESSION_DRIVER=database" >> .env
+                            echo "SANCTUM_STATEFUL_DOMAINS=localhost:3000" >> .env
+                            echo "SESSION_LIFETIME=120" >> .env
+                            echo "SESSION_ENCRYPT=false" >> .env
+                            echo "SESSION_PATH=/" >> .env
+                            echo "SESSION_DOMAIN=localhost" >> .env
+                            echo "APP_URL=http://127.0.0.1:8000" >> .env # Adjust if your main app URL is different
+
+                            echo "BROADCAST_CONNECTION=log" >> .env
+                            echo "FILESYSTEM_DISK=local" >> .env
+                            echo "QUEUE_CONNECTION=database" >> .env
+
+                            echo "CACHE_STORE=database" >> .env
+                            echo "CACHE_PREFIX=" >> .env
+
+                            echo "MEMCACHED_HOST=127.0.0.1" >> .env
+
+                            echo "REDIS_CLIENT=phpredis" >> .env
+                            echo "REDIS_HOST=127.0.0.1" >> .env
+                            echo "REDIS_PASSWORD=null" >> .env
+                            echo "REDIS_PORT=6379" >> .env
+
+                            echo "MAIL_MAILER=smtp" >> .env
+                            echo "MAIL_HOST=sandbox.smtp.mailtrap.io" >> .env
+                            echo "MAIL_PORT=2525" >> .env
+                            echo "MAIL_USERNAME=2d7f2d3bb66fad" >> .env
+                            echo "MAIL_PASSWORD=fc622a91f97535" >> .env
+                            echo "MAIL_ENCRYPTION=null" >> .env
+                            echo "MAIL_FROM_ADDRESS=\\"noreply@clms.net\\"" >> .env
+                            echo "MAIL_FROM_NAME=\\"CLMS\\"" >> .env
+
+                            echo "AWS_ACCESS_KEY_ID=" >> .env
+                            echo "AWS_SECRET_ACCESS_KEY=" >> .env
+                            echo "AWS_DEFAULT_REGION=us-east-1" >> .env
+                            echo "AWS_BUCKET=" >> .env
+                            echo "AWS_USE_PATH_STYLE_ENDPOINT=false" >> .env
+
+                            echo "VITE_APP_NAME=\\"CLMS\\"" >> .env
+                            echo "WKHTML_PDF_BINARY=\\"/usr/local/bin/wkhtmltopdf\\"" >> .env
+                        """
+
+                        // Stop and remove existing Docker Compose services to ensure a clean deployment.
+                        // '--remove-orphans' cleans up containers for services no longer defined in docker-compose.yml.
+                        echo "Stopping and removing old Docker Compose services..."
+                        sh 'docker-compose down --remove-orphans'
+
+                        // Start new services.
+                        // '--build' ensures that if your Dockerfile or its context has changed,
+                        // the images are rebuilt before starting the containers.
+                        echo "Starting new Docker Compose services..."
+                        sh 'docker-compose up -d --build'
+                    }
+                }
+            }
+        }
+
+        // Stage 5: Run Post-Deployment Tasks (e.g., Database Migrations, Cache Clearing)
+        stage('Run Post-Deployment Tasks') {
+            steps {
+                script {
+                    dir(pwd()) { // Ensure commands run from the repository root
+                        echo "Waiting for database and application services to be fully ready..."
+                        // A simple sleep provides time for services (especially MySQL) to initialize.
+                        // For more robust production setups, consider a 'wait-for-it.sh' script
+                        // or a loop that checks database connectivity before proceeding.
+                        sh 'sleep 20' // Adjust this duration as needed
+
+                        // Run Laravel database migrations inside the PHP-FPM container.
+                        // '--force' is necessary for non-interactive environments like CI/CD.
+                        echo "Running Laravel database migrations..."
+                        sh 'docker exec clms_laravel_php_fpm php artisan migrate --force'
+
+                        // Clear and cache Laravel configurations, routes, and views for optimization.
+                        echo "Clearing and caching Laravel configurations, routes, and views..."
+                        sh 'docker exec clms_laravel_php_fpm php artisan config:clear'
+                        sh 'docker exec clms_laravel_php_fpm php artisan cache:clear'
+                        sh 'docker exec clms_laravel_php_fpm php artisan route:clear'
+                        sh 'docker exec clms_laravel_php_fpm php artisan view:clear'
+                        sh 'docker exec clms_laravel_php_fpm php artisan config:cache'
+                        sh 'docker exec clms_laravel_php_fpm php artisan route:cache'
+                        sh 'docker exec clms_laravel_php_fpm php artisan view:cache'
+                        sh 'docker exec clms_laravel_php_fpm php artisan optimize' # Runs various optimizations
+                    }
+                }
+            }
+        }
     }
 
+    // Post-build actions: These steps run regardless of the stage outcomes.
     post {
         always {
-            // REMOVED 'steps' BLOCK HERE - commands go directly here
             echo 'Cleaning up Docker login...'
+            // Ensure Docker host environment variables are set for logout command.
             withEnv([
                 "DOCKER_HOST=tcp://host.docker.internal:23750",
                 "DOCKER_CLIENT_TIMEOUT=600",
@@ -81,10 +240,11 @@ pipeline {
             }
         }
         success {
-            echo 'Backend Docker image built and pushed successfully!'
+            echo 'Backend CI/CD pipeline completed successfully! Services deployed and configured.'
         }
         failure {
-            echo 'Backend Docker image build and push FAILED!'
+            echo 'Backend CI/CD pipeline FAILED! Check console output for details.'
         }
+        // You can add 'unstable', 'fixed', 'aborted' blocks for more specific post-actions.
     }
 }
