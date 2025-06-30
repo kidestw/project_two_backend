@@ -95,8 +95,8 @@ pipeline {
                     sh """#!/bin/bash
                         set -x # This will print each command before it's executed
 
-                        echo "Current directory: $(pwd)"
-                        echo "DOCKER_HOST value for this stage: ${DOCKER_HOST}" # This will be empty here, as it's not in this stage's default env
+                        echo "Current directory: \$(pwd)" # Escaped for Groovy
+                        echo "DOCKER_HOST value for this stage: \${DOCKER_HOST}" # Escaped for Groovy
 
                         echo "Creating/Updating .env file for deployment..."
                         # Dynamically create the .env file in the repository root.
@@ -174,7 +174,7 @@ pipeline {
                         # Using docker/compose:1.29.2 for stability and hyphenated syntax.
                         docker run --rm \\
                             --env DOCKER_HOST="tcp://host.docker.internal:23750" \\
-                            --volume "$(pwd)":/app \\
+                            --volume "\$(pwd)":/app \\ # Escaped for Groovy
                             docker/compose:1.29.2 \\
                             docker-compose -f /app/docker-compose.yml \\
                             down --remove-orphans
@@ -183,7 +183,7 @@ pipeline {
                         # Run docker-compose up inside a container, explicitly passing DOCKER_HOST.
                         docker run --rm \\
                             --env DOCKER_HOST="tcp://host.docker.internal:23750" \\
-                            --volume "$(pwd)":/app \\
+                            --volume "\$(pwd)":/app \\ # Escaped for Groovy
                             docker/compose:1.29.2 \\
                             docker-compose -f /app/docker-compose.yml \\
                             up -d --build
