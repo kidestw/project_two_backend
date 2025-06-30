@@ -1,0 +1,75 @@
+# docker-compose.yml
+# Defines the services for your Laravel backend application using Docker Compose.
+# This file should be located in the root of your Git repository.
+
+version: '3.8'
+
+services:
+  # MySQL Database Service
+  db:
+    image: mysql:8.0
+    container_name: clms_mysql_database
+    restart: unless-stopped
+    environment:
+      # These variables configure the MySQL server itself.
+      MYSQL_DATABASE: clms_db
+      MYSQL_USER: root
+      MYSQL_PASSWORD: "" # IMPORTANT: For production, set a strong password here or use Docker secrets.
+      MYSQL_ROOT_PASSWORD: "" # IMPORTANT: For production, set a strong password here or use Docker secrets.
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes" # Allows root login with empty password for development ease.
+    volumes:
+      # Persist database data to a named volume to prevent data loss on container removal.
+      - db_data:/var/lib/mysql
+    ports:
+      # Map host port 3306 to container port 3306, allowing host access to the database.
+      - "3306:3306"
+    healthcheck:
+      # Define a health check to ensure the database is fully up and ready before dependent services start.
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "127.0.0.1", "-u", "root"]
+      interval: 5s
+      timeout: 20s
+      retries: 10
+      start_period: 30s # Give the database time to initialize on first run.
+
+  # Laravel PHP-FPM Backend Service
+  php-fpm:
+    image: kidest/back-end-backend:latest # Uses the Docker image built and pushed by Jenkins.
+    container_name: clms_laravel_php_fpm
+    restart: unless-stopped
+    # Mount the Laravel application code from the 'back-end' subdirectory into the container.
+    # This ensures changes to your PHP code are reflected without rebuilding the image.
+    volumes:
+      - ./back-end:/var/www/html # <-- CRITICAL FIX: Mounts the 'back-end' directory
+
+    # NO 'environment' BLOCK HERE!
+    # All Laravel-specific environment variables (like DB_HOST, APP_KEY, etc.)
+    # will now be sourced from the .env file dynamically created by Jenkins.
+
+    depends_on:
+      # Ensure the database service is healthy before starting PHP-FPM.
+      db:
+        condition: service_healthy
+
+  # Nginx Web Server Service
+  nginx:
+    image: nginx:alpine
+    container_name: clms_nginx_web
+    restart: unless-stopped
+    ports:
+      # Map host port 80 to container port 80, making Nginx accessible from your host.
+      - "80:80"
+    volumes:
+      # Mount the Laravel 'public' directory from the 'back-end' subdirectory to be served by Nginx.
+      - ./back-end/public:/var/www/html # <-- CRITICAL FIX: Mounts the 'public' directory
+      # Mount Nginx configuration files from the 'back-end/docker/nginx' subdirectory.
+      # ':ro' makes them read-only inside the container.
+      - ./back-end/docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro # <-- CRITICAL FIX: Correct path
+      - ./back-end/docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro # <-- CRITICAL FIX: Correct path
+    depends_on:
+      # Ensure PHP-FPM is started before Nginx attempts to proxy requests to it.
+      php-fpm:
+        condition: service_started
+
+# Define named volumes for persistent data (e.g., MySQL data).
+volumes:
+  db_data:
