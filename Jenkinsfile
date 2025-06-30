@@ -219,7 +219,7 @@ pipeline {
                         sh 'docker exec clms_laravel_php_fpm php artisan config:cache'
                         sh 'docker exec clms_laravel_php_fpm php artisan route:cache'
                         sh 'docker exec clms_laravel_php_fpm php artisan view:cache'
-                        sh 'docker exec clms_laravel_php_fpm php artisan optimize' # Runs various optimizations
+                        sh 'docker exec clms_laravel_php_fpm php artisan optimize'
                     }
                 }
             }
