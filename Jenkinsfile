@@ -10,10 +10,10 @@ pipeline {
         stage('Checkout Code') {
             steps {
                 // Checkout using GitHub token stored in Jenkins Credentials as 'github-pat'
-                withCredentials([string(credentialsId: 'github-pat', variable: 'GITHUB_TOKEN')]) {
+                //withCredentials([string(credentialsId: 'github-pat', variable: 'GITHUB_TOKEN')]) {
                     script {
                         // Use HTTPS URL with token for authentication
-                        def repoUrl = "https://${GITHUB_TOKEN}@github.com/kidestw/project_two_backend.git"
+                        def repoUrl = "https://github.com/kidestw/project_two_backend.git"
                         checkout([$class: 'GitSCM',
                             branches: [[name: '*/main']],
                             userRemoteConfigs: [[url: repoUrl]]
@@ -161,4 +161,3 @@ WKHTML_PDF_BINARY=/usr/local/bin/wkhtmltopdf
             echo '❌ Backend CI/CD pipeline FAILED. Check logs for details.'
         }
     }
-}
