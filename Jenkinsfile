@@ -102,7 +102,9 @@ WKHTML_PDF_BINARY=/usr/local/bin/wkhtmltopdf
             steps {
                 script {
                     sh "docker build -t ${DOCKER_IMAGE_NAME}:latest ."
+                    sh "docker tag ${DOCKER_IMAGE_NAME}:latest ${DOCKER_IMAGE_NAME}:${env.GIT_COMMIT}"
                     sh "docker push ${DOCKER_IMAGE_NAME}:latest"
+                    sh "docker push ${DOCKER_IMAGE_NAME}:${env.GIT_COMMIT}"
                 }
             }
         }
@@ -119,7 +121,7 @@ WKHTML_PDF_BINARY=/usr/local/bin/wkhtmltopdf
         stage('Run Laravel Post-Deploy Commands') {
             steps {
                 script {
-                    sh 'sleep 20'
+                    sh 'sleep 20' // wait for containers to initialize
                     sh 'docker exec clms_laravel_php_fpm php artisan migrate --force'
                     sh 'docker exec clms_laravel_php_fpm php artisan config:cache'
                     sh 'docker exec clms_laravel_php_fpm php artisan route:cache'
@@ -131,7 +133,9 @@ WKHTML_PDF_BINARY=/usr/local/bin/wkhtmltopdf
 
     post {
         always {
-            sh 'docker logout || true'
+            node {
+                sh 'docker logout || true'
+            }
         }
         success {
             echo '✅ Backend CI/CD pipeline completed successfully!'
