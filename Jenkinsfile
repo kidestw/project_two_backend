@@ -16,7 +16,7 @@ pipeline {
         stage('Login to Docker Hub') {
             steps {
                 withCredentials([string(credentialsId: 'docker-hub-token', variable: 'DOCKER_TOKEN')]) {
-                    sh 'echo $DOCKER_TOKEN | docker login -u $DOCKER_HUB_USERNAME --password-stdin'
+                    sh 'echo "$DOCKER_TOKEN" | docker login -u "$DOCKER_HUB_USERNAME" --password-stdin'
                 }
             }
         }
@@ -24,7 +24,7 @@ pipeline {
         stage('Create .env File') {
             steps {
                 script {
-                    writeFile file: '.env', text: '''
+                    writeFile file: '.env', text: '''\
 APP_NAME=CLMS
 APP_ENV=local
 APP_KEY=base64:rdyVG8KM7Owniz6O7ypo//7vkb2Y3yvI+ASiRZljCD8=
@@ -121,7 +121,7 @@ WKHTML_PDF_BINARY=/usr/local/bin/wkhtmltopdf
         stage('Run Laravel Post-Deploy Commands') {
             steps {
                 script {
-                    sh 'sleep 20'
+                    sh 'sleep 20'  // wait for containers to initialize
                     sh 'docker exec clms_laravel_php_fpm php artisan migrate --force'
                     sh 'docker exec clms_laravel_php_fpm php artisan config:cache'
                     sh 'docker exec clms_laravel_php_fpm php artisan route:cache'
