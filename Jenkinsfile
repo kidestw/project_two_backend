@@ -9,7 +9,17 @@ pipeline {
     stages {
         stage('Checkout Code') {
             steps {
-                git url: 'https://github.com/kidestw/project_two_backend.git', branch: 'main'
+                // Checkout using GitHub token stored in Jenkins Credentials as 'github-pat'
+                withCredentials([string(credentialsId: 'github-pat', variable: 'GITHUB_TOKEN')]) {
+                    script {
+                        // Use HTTPS URL with token for authentication
+                        def repoUrl = "https://${GITHUB_TOKEN}@github.com/kidestw/project_two_backend.git"
+                        checkout([$class: 'GitSCM',
+                            branches: [[name: '*/main']],
+                            userRemoteConfigs: [[url: repoUrl]]
+                        ])
+                    }
+                }
             }
         }
 
@@ -101,10 +111,14 @@ WKHTML_PDF_BINARY=/usr/local/bin/wkhtmltopdf
         stage('Build and Push Docker Image') {
             steps {
                 script {
+                    // Get short Git commit hash for tagging
+                    def gitCommit = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
+                    env.GIT_COMMIT = gitCommit
+
                     sh "docker build -t ${DOCKER_IMAGE_NAME}:latest ."
-                    sh "docker tag ${DOCKER_IMAGE_NAME}:latest ${DOCKER_IMAGE_NAME}:${env.GIT_COMMIT}"
+                    sh "docker tag ${DOCKER_IMAGE_NAME}:latest ${DOCKER_IMAGE_NAME}:${gitCommit}"
                     sh "docker push ${DOCKER_IMAGE_NAME}:latest"
-                    sh "docker push ${DOCKER_IMAGE_NAME}:${env.GIT_COMMIT}"
+                    sh "docker push ${DOCKER_IMAGE_NAME}:${gitCommit}"
                 }
             }
         }
@@ -112,6 +126,7 @@ WKHTML_PDF_BINARY=/usr/local/bin/wkhtmltopdf
         stage('Deploy with Docker Compose') {
             steps {
                 script {
+                    // Ignore failure for down command to avoid breaking if no containers running
                     sh 'docker-compose down --remove-orphans || true'
                     sh 'docker-compose up -d --build'
                 }
@@ -121,11 +136,15 @@ WKHTML_PDF_BINARY=/usr/local/bin/wkhtmltopdf
         stage('Run Laravel Post-Deploy Commands') {
             steps {
                 script {
-                    sh 'sleep 20'  // wait for containers to initialize
-                    sh 'docker exec clms_laravel_php_fpm php artisan migrate --force'
-                    sh 'docker exec clms_laravel_php_fpm php artisan config:cache'
-                    sh 'docker exec clms_laravel_php_fpm php artisan route:cache'
-                    sh 'docker exec clms_laravel_php_fpm php artisan view:cache'
+                    sh 'sleep 20'  // wait for containers to start properly
+
+                    // Replace container name with your actual PHP container name if different
+                    def phpContainer = 'clms_laravel_php_fpm'
+
+                    sh "docker exec ${phpContainer} php artisan migrate --force"
+                    sh "docker exec ${phpContainer} php artisan config:cache"
+                    sh "docker exec ${phpContainer} php artisan route:cache"
+                    sh "docker exec ${phpContainer} php artisan view:cache"
                 }
             }
         }
