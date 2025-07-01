@@ -133,9 +133,7 @@ WKHTML_PDF_BINARY=/usr/local/bin/wkhtmltopdf
 
     post {
         always {
-            node {
-                sh 'docker logout || true'
-            }
+            sh 'docker logout || true'
         }
         success {
             echo '✅ Backend CI/CD pipeline completed successfully!'
