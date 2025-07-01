@@ -99,7 +99,7 @@ pipeline {
                     script {
                         // Create .env file within a shell script
                         sh """#!/bin/bash
-                            set -x # This will print each command before it's executed
+                            set -ex # 'e' will exit immediately on error, 'x' for debug output
 
                             echo "Current directory: \$(pwd)"
                             echo "DOCKER_HOST value for this shell script: \${DOCKER_HOST}"
@@ -183,11 +183,11 @@ pipeline {
                         echo "Stopping and removing old Docker Compose services..."
                         // Run docker-compose down inside a container, explicitly passing DOCKER_HOST.
                         // Using docker/compose:latest and 'docker compose' syntax.
-                        sh 'docker run --rm --env DOCKER_HOST="tcp://host.docker.internal:23750" --volume "$(pwd)":/app docker/compose:latest docker compose -f /app/docker-compose.yml down --remove-orphans'
+                        sh 'docker run --rm --env DOCKER_HOST="tcp://host.docker.internal:23750" --volume "$(pwd)":/app docker/compose:latest docker compose -f /app/docker-compose.yml down --remove-orphans 2>&1'
 
                         echo "Starting new Docker Compose services..."
                         // Run docker-compose up inside a container, explicitly passing DOCKER_HOST.
-                        sh 'docker run --rm --env DOCKER_HOST="tcp://host.docker.internal:23750" --volume "$(pwd)":/app docker/compose:latest docker compose -f /app/docker-compose.yml up -d --build'
+                        sh 'docker run --rm --env DOCKER_HOST="tcp://host.docker.internal:23750" --volume "$(pwd)":/app docker/compose:latest docker compose -f /app/docker-compose.yml up -d --build 2>&1'
                     }
                 }
             }
