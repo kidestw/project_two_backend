@@ -180,6 +180,9 @@ pipeline {
                             sh 'docker pull docker/compose:latest'
                         }
 
+                        echo "Verifying Docker daemon connectivity from within docker/compose container..."
+                        sh 'docker run --rm --env DOCKER_HOST="tcp://host.docker.internal:23750" docker/compose:latest docker ps 2>&1'
+
                         echo "Stopping and removing old Docker Compose services..."
                         // Run docker-compose down inside a container, explicitly passing DOCKER_HOST.
                         // Using docker/compose:latest and 'docker compose' syntax.
