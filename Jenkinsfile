@@ -90,101 +90,99 @@ pipeline {
         // Stage 4: Deploy Services using Docker Compose
         stage('Deploy Services') {
             steps {
-                // IMPORTANT: DOCKER_HOST and timeouts are now set directly for this script block
-                withEnv([
-                    "DOCKER_HOST=tcp://host.docker.internal:23750",
-                    "DOCKER_CLIENT_TIMEOUT=600",
-                    "COMPOSE_HTTP_TIMEOUT=600"
-                ]) {
-                    script {
-                        // Enable shell debugging to see executed commands and their environment
-                        sh """#!/bin/bash
-                            set -x # This will print each command before it's executed
+                script {
+                    // Enable shell debugging to see executed commands and their environment
+                    sh """#!/bin/bash
+                        set -x # This will print each command before it's executed
 
-                            echo "Current directory: \$(pwd)" # Escaped for Groovy
-                            echo "DOCKER_HOST value for this shell: \${DOCKER_HOST}" # Now it should show the value
+                        echo "Current directory: \$(pwd)" # Escaped for Groovy
+                        echo "DOCKER_HOST value for this stage: \${DOCKER_HOST}" # Escaped for Groovy
 
-                            echo "Creating/Updating .env file for deployment..."
-                            # Dynamically create the .env file in the repository root.
-                            echo "APP_NAME=\\"CLMS\\"" > .env
-                            echo "APP_ENV=local" >> .env
-                            echo "APP_KEY=base64:rdyVG8KM7Owniz6O7ypo//7vkb2Y3yvI+ASiRZljCD8=" >> .env
-                            echo "APP_DEBUG=true" >> .env
+                        echo "Creating/Updating .env file for deployment..."
+                        # Dynamically create the .env file in the repository root.
+                        echo "APP_NAME=\\"CLMS\\"" > .env
+                        echo "APP_ENV=local" >> .env
+                        echo "APP_KEY=base64:rdyVG8KM7Owniz6O7ypo//7vkb2Y3yvI+ASiRZljCD8=" >> .env
+                        echo "APP_DEBUG=true" >> .env
 
-                            echo "APP_TIMEZONE=UTC" >> .env
-                            echo "APP_URL=" >> .env
-                            echo "APP_FRONTEND_URL=\\"http://localhost:3000\\"" >> .env
-                            echo "FRONTEND_URL=\\"http://localhost:3000\\"" >> .env
+                        echo "APP_TIMEZONE=UTC" >> .env
+                        echo "APP_URL=" >> .env
+                        echo "APP_FRONTEND_URL=\\"http://localhost:3000\\"" >> .env
+                        echo "FRONTEND_URL=\\"http://localhost:3000\\"" >> .env
 
-                            echo "APP_LOCALE=en" >> .env
-                            echo "APP_FALLBACK_LOCALE=en" >> .env
-                            echo "APP_FAKER_LOCALE=en_US" >> .env
+                        echo "APP_LOCALE=en" >> .env
+                        echo "APP_FALLBACK_LOCALE=en" >> .env
+                        echo "APP_FAKER_LOCALE=en_US" >> .env
 
-                            echo "PHP_CLI_SERVER_WORKERS=4" >> .env
-                            echo "BCRYPT_ROUNDS=12" >> .env
+                        echo "PHP_CLI_SERVER_WORKERS=4" >> .env
+                        echo "BCRYPT_ROUNDS=12" >> .env
 
-                            echo "LOG_CHANNEL=stack" >> .env
-                            echo "LOG_STACK=single" >> .env
-                            echo "LOG_DEPRECATIONS_CHANNEL=null" >> .env
-                            echo "LOG_LEVEL=debug" >> .env
+                        echo "LOG_CHANNEL=stack" >> .env
+                        echo "LOG_STACK=single" >> .env
+                        echo "LOG_DEPRECATIONS_CHANNEL=null" >> .env
+                        echo "LOG_LEVEL=debug" >> .env
 
-                            echo "DB_CONNECTION=mysql" >> .env
-                            echo "DB_HOST=clms_mysql_database" >> .env
-                            echo "DB_PORT=3306" >> .env
-                            echo "DB_DATABASE=clms_db" >> .env
-                            echo "DB_USERNAME=root" >> .env
-                            echo "DB_PASSWORD=" >> .env # For production, use Jenkins credential here
+                        echo "DB_CONNECTION=mysql" >> .env
+                        echo "DB_HOST=clms_mysql_database" >> .env
+                        echo "DB_PORT=3306" >> .env
+                        echo "DB_DATABASE=clms_db" >> .env
+                        echo "DB_USERNAME=root" >> .env
+                        echo "DB_PASSWORD=" >> .env # For production, use Jenkins credential here
 
-                            echo "SESSION_DRIVER=database" >> .env
-                            echo "SANCTUM_STATEFUL_DOMAINS=localhost:3000" >> .env
-                            echo "SESSION_LIFETIME=120" >> .env
-                            echo "SESSION_ENCRYPT=false" >> .env
-                            echo "SESSION_PATH=/" >> .env
-                            echo "SESSION_DOMAIN=localhost" >> .env
-                            echo "APP_URL=http://127.0.0.1:8000" >> .env
+                        echo "SESSION_DRIVER=database" >> .env
+                        echo "SANCTUM_STATEFUL_DOMAINS=localhost:3000" >> .env
+                        echo "SESSION_LIFETIME=120" >> .env
+                        echo "SESSION_ENCRYPT=false" >> .env
+                        echo "SESSION_PATH=/" >> .env
+                        echo "SESSION_DOMAIN=localhost" >> .env
+                        echo "APP_URL=http://127.0.0.1:8000" >> .env
 
-                            echo "BROADCAST_CONNECTION=log" >> .env
-                            echo "FILESYSTEM_DISK=local" >> .env
-                            echo "QUEUE_CONNECTION=database" >> .env
+                        echo "BROADCAST_CONNECTION=log" >> .env
+                        echo "FILESYSTEM_DISK=local" >> .env
+                        echo "QUEUE_CONNECTION=database" >> .env
 
-                            echo "CACHE_STORE=database" >> .env
-                            echo "CACHE_PREFIX=" >> .env
+                        echo "CACHE_STORE=database" >> .env
+                        echo "CACHE_PREFIX=" >> .env
 
-                            echo "MEMCACHED_HOST=127.0.0.1" >> .env
+                        echo "MEMCACHED_HOST=127.0.0.1" >> .env
 
-                            echo "REDIS_CLIENT=phpredis" >> .env
-                            echo "REDIS_HOST=127.0.0.1" >> .env
-                            echo "REDIS_PASSWORD=null" >> .env
-                            echo "REDIS_PORT=6379" >> .env
+                        echo "REDIS_CLIENT=phpredis" >> .env
+                        echo "REDIS_HOST=127.0.0.1" >> .env
+                        echo "REDIS_PASSWORD=null" >> .env
+                        echo "REDIS_PORT=6379" >> .env
 
-                            echo "MAIL_MAILER=smtp" >> .env
-                            echo "MAIL_HOST=sandbox.smtp.mailtrap.io" >> .env
-                            echo "MAIL_PORT=2525" >> .env
-                            echo "MAIL_USERNAME=2d7f2d3bb66fad" >> .env
-                            echo "MAIL_PASSWORD=fc622a91f97535" >> .env
-                            echo "MAIL_ENCRYPTION=null" >> .env
-                            echo "MAIL_FROM_ADDRESS=\\"noreply@clms.net\\"" >> .env
-                            echo "MAIL_FROM_NAME=\\"CLMS\\"" >> .env
+                        echo "MAIL_MAILER=smtp" >> .env
+                        echo "MAIL_HOST=sandbox.smtp.mailtrap.io" >> .env
+                        echo "MAIL_PORT=2525" >> .env
+                        echo "MAIL_USERNAME=2d7f2d3bb66fad" >> .env
+                        echo "MAIL_PASSWORD=fc622a91f97535" >> .env
+                        echo "MAIL_ENCRYPTION=null" >> .env
+                        echo "MAIL_FROM_ADDRESS=\\"noreply@clms.net\\"" >> .env
+                        echo "MAIL_FROM_NAME=\\"CLMS\\"" >> .env
 
-                            echo "AWS_ACCESS_KEY_ID=" >> .env
-                            echo "AWS_SECRET_ACCESS_KEY=" >> .env
-                            echo "AWS_DEFAULT_REGION=us-east-1" >> .env
-                            echo "AWS_BUCKET=" >> .env
-                            echo "AWS_USE_PATH_STYLE_ENDPOINT=false" >> .env
+                        echo "AWS_ACCESS_KEY_ID=" >> .env
+                        echo "AWS_SECRET_ACCESS_KEY=" >> .env
+                        echo "AWS_DEFAULT_REGION=us-east-1" >> .env
+                        echo "AWS_BUCKET=" >> .env
+                        echo "AWS_USE_PATH_STYLE_ENDPOINT=false" >> .env
 
-                            echo "VITE_APP_NAME=\\"CLMS\\"" >> .env
-                            echo "WKHTML_PDF_BINARY=\\"/usr/local/bin/wkhtmltopdf\\"" >> .env
+                        echo "VITE_APP_NAME=\\"CLMS\\"" >> .env
+                        echo "WKHTML_PDF_BINARY=\\"/usr/local/bin/wkhtmltopdf\\"" >> .env
 
-                            echo "Stopping and removing old Docker Compose services..."
-                            # Run docker-compose down inside a container, explicitly passing DOCKER_HOST.
-                            # Using docker/compose:1.29.2 for stability and hyphenated syntax.
-                            docker run --rm --env DOCKER_HOST="\${DOCKER_HOST}" --volume "\$(pwd)":/app docker/compose:1.29.2 -f /app/docker-compose.yml down --remove-orphans
+                        echo "Pulling docker/compose:latest image..."
+                        retry(3) {
+                            sh 'docker pull docker/compose:latest'
+                        }
 
-                            echo "Starting new Docker Compose services..."
-                            # Run docker-compose up inside a container, explicitly passing DOCKER_HOST.
-                            docker run --rm --env DOCKER_HOST="\${DOCKER_HOST}" --volume "\$(pwd)":/app docker/compose:1.29.2 -f /app/docker-compose.yml up -d --build
-                        """
-                    }
+                        echo "Stopping and removing old Docker Compose services..."
+                        # Run docker-compose down inside a container, explicitly passing DOCKER_HOST.
+                        # Using docker/compose:latest and 'docker compose' syntax.
+                        docker run --rm --env DOCKER_HOST="tcp://host.docker.internal:23750" --volume "\$(pwd)":/app docker/compose:latest docker compose -f /app/docker-compose.yml down --remove-orphans
+
+                        echo "Starting new Docker Compose services..."
+                        # Run docker-compose up inside a container, explicitly passing DOCKER_HOST.
+                        docker run --rm --env DOCKER_HOST="tcp://host.docker.internal:23750" --volume "\$(pwd)":/app docker/compose:latest docker compose -f /app/docker-compose.yml up -d --build
+                    """
                 }
             }
         }
