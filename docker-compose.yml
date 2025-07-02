@@ -34,19 +34,19 @@ services:
       db:
         condition: service_healthy
 
-  nginx:
-    image: nginx:alpine
-    container_name: clms_nginx_web
-    restart: unless-stopped
-    ports:
-      - "80:80"
-    volumes:
-      - /var/jenkins_home/workspace/Laravel-Backend-CI@2/project_two_backend/docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      -  /var/jenkins_home/workspace/Laravel-Backend-CI@2/project_two_backend/docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
-    command: [ "nginx", "-g", "daemon off;", "-c", "/etc/nginx/custom.conf" ]
-    depends_on:
-      php-fpm:
-        condition: service_started
+nginx:
+  image: nginx:alpine
+  container_name: clms_nginx_web
+  restart: unless-stopped
+  ports:
+    - "80:80"
+  volumes:
+    - ./docker/nginx:/etc/nginx:ro
+    - ./public:/var/www/public
+  command: [ "nginx", "-g", "daemon off;", "-c", "/etc/nginx/custom.conf" ]
+  depends_on:
+    php-fpm:
+      condition: service_started
 
 volumes:
   db_data:
