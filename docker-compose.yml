@@ -7,7 +7,6 @@ services:
     restart: unless-stopped
     environment:
       MYSQL_DATABASE: clms_db
-      # MYSQL_USER: root
       MYSQL_PASSWORD: ""
       MYSQL_ROOT_PASSWORD: ""
       MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
@@ -34,19 +33,18 @@ services:
       db:
         condition: service_healthy
 
-nginx:
-  image: nginx:alpine
-  container_name: clms_nginx_web
-  restart: unless-stopped
-  ports:
-    - "80:80"
-  volumes:
-    - ./docker/nginx:/etc/nginx:ro
-    - ./public:/var/www/public
-  command: [ "nginx", "-g", "daemon off;", "-c", "/etc/nginx/custom.conf" ]
-  depends_on:
-    php-fpm:
-      condition: service_started
+  nginx:
+    image: nginx:alpine
+    container_name: clms_nginx_web
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./docker/nginx:/etc/nginx:ro
+      - ./public:/var/www/public
+    depends_on:
+      php-fpm:
+        condition: service_started
 
 volumes:
   db_data:
