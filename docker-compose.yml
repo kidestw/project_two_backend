@@ -40,11 +40,13 @@ services:
     ports:
       - "80:80"
     volumes:
-      - ./docker/nginx:/etc/nginx:ro
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
       - ./public:/var/www/public
     depends_on:
       php-fpm:
         condition: service_started
+
 
 volumes:
   db_data:
