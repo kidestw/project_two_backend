@@ -2,12 +2,13 @@ version: "3.8"
 
 services:
   nginx:
+    image: nginx:latest
     container_name: clms_nginx_web
-    image: nginx:alpine
     ports:
       - "80:80"
     volumes:
-      - ./docker/nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./docker/nginx/conf.d/nginx.conf:/etc/nginx/nginx.conf
+      - ./docker/nginx/conf.d/:/etc/nginx/conf.d/
       - ./public:/var/www/html
     depends_on:
       - laravel_php_fpm
