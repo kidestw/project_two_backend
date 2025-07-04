@@ -7,11 +7,12 @@ services:
     ports:
       - "80:80"
     volumes:
-      - ./docker/ngnix/nginx.conf:/etc/nginx/nginx.conf
+      - ./docker/ngnix/nginx.conf:/etc/nginx/custom.conf
       - ./docker/ngnix/conf.d/:/etc/nginx/conf.d/
       - ./public:/var/www/html/public
     depends_on:
       - php-fpm
+    command: [ "nginx", "-g", "daemon off;", "-c", "/etc/nginx/custom.conf" ]
     networks:
       - bridge
 
