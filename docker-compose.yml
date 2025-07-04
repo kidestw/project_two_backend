@@ -30,7 +30,7 @@ services:
       - bridge
 
   db:
-    image: mysql:8.0
+    image: mysql
     container_name: clms_mysql_database
     restart: unless-stopped
     ports:
