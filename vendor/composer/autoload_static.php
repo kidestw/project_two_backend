@@ -4,7 +4,7 @@
 
 namespace Composer\Autoload;
 
-class ComposerStaticInit91b3fec840a28a19a85ffaa5ed920f52
+class ComposerStaticInit1f4b754aedd8f0c56f87808cd85fcf62
 {
     public static $files = array (
         '6e3fae29631ef280660b3cdad06f25a8' => __DIR__ . '/..' . '/symfony/deprecation-contracts/function.php',
@@ -38,6 +38,7 @@ class ComposerStaticInit91b3fec840a28a19a85ffaa5ed920f52
         '7f7ac2ddea9cc3fb4b2cc201d63dbc10' => __DIR__ . '/..' . '/laravel/framework/src/Illuminate/Log/functions.php',
         '493c6aea52f6009bab023b26c21a386a' => __DIR__ . '/..' . '/laravel/framework/src/Illuminate/Support/functions.php',
         '58571171fd5812e6e447dce228f52f4d' => __DIR__ . '/..' . '/laravel/framework/src/Illuminate/Support/helpers.php',
+        '062a54fe8f6f91078b197f2922521dd9' => __DIR__ . '/..' . '/laravel/pint/overrides/Runner/Parallel/ProcessFactory.php',
         'c72349b1fe8d0deeedd3a52e8aa814d8' => __DIR__ . '/..' . '/mockery/mockery/library/helpers.php',
         'ce9671a430e4846b44e1c68c7611f9f5' => __DIR__ . '/..' . '/mockery/mockery/library/Mockery.php',
         'ec07570ca5a812141189b1fa81503674' => __DIR__ . '/..' . '/phpunit/phpunit/src/Framework/Assert/Functions.php',
@@ -6900,6 +6901,7 @@ class ComposerStaticInit91b3fec840a28a19a85ffaa5ed920f52
         'Spatie\\Image\\Drivers\\Color' => __DIR__ . '/..' . '/spatie/image/src/Drivers/Color.php',
         'Spatie\\Image\\Drivers\\Concerns\\AddsWatermark' => __DIR__ . '/..' . '/spatie/image/src/Drivers/Concerns/AddsWatermark.php',
         'Spatie\\Image\\Drivers\\Concerns\\CalculatesCropOffsets' => __DIR__ . '/..' . '/spatie/image/src/Drivers/Concerns/CalculatesCropOffsets.php',
+        'Spatie\\Image\\Drivers\\Concerns\\CalculatesFocalCropAndResizeCoordinates' => __DIR__ . '/..' . '/spatie/image/src/Drivers/Concerns/CalculatesFocalCropAndResizeCoordinates.php',
         'Spatie\\Image\\Drivers\\Concerns\\CalculatesFocalCropCoordinates' => __DIR__ . '/..' . '/spatie/image/src/Drivers/Concerns/CalculatesFocalCropCoordinates.php',
         'Spatie\\Image\\Drivers\\Concerns\\GetsOrientationFromExif' => __DIR__ . '/..' . '/spatie/image/src/Drivers/Concerns/GetsOrientationFromExif.php',
         'Spatie\\Image\\Drivers\\Concerns\\PerformsFitCrops' => __DIR__ . '/..' . '/spatie/image/src/Drivers/Concerns/PerformsFitCrops.php',
@@ -7591,6 +7593,7 @@ class ComposerStaticInit91b3fec840a28a19a85ffaa5ed920f52
         'Symfony\\Component\\HttpKernel\\Fragment\\RoutableFragmentRenderer' => __DIR__ . '/..' . '/symfony/http-kernel/Fragment/RoutableFragmentRenderer.php',
         'Symfony\\Component\\HttpKernel\\Fragment\\SsiFragmentRenderer' => __DIR__ . '/..' . '/symfony/http-kernel/Fragment/SsiFragmentRenderer.php',
         'Symfony\\Component\\HttpKernel\\HttpCache\\AbstractSurrogate' => __DIR__ . '/..' . '/symfony/http-kernel/HttpCache/AbstractSurrogate.php',
+        'Symfony\\Component\\HttpKernel\\HttpCache\\CacheWasLockedException' => __DIR__ . '/..' . '/symfony/http-kernel/HttpCache/CacheWasLockedException.php',
         'Symfony\\Component\\HttpKernel\\HttpCache\\Esi' => __DIR__ . '/..' . '/symfony/http-kernel/HttpCache/Esi.php',
         'Symfony\\Component\\HttpKernel\\HttpCache\\HttpCache' => __DIR__ . '/..' . '/symfony/http-kernel/HttpCache/HttpCache.php',
         'Symfony\\Component\\HttpKernel\\HttpCache\\ResponseCacheStrategy' => __DIR__ . '/..' . '/symfony/http-kernel/HttpCache/ResponseCacheStrategy.php',
@@ -8233,10 +8236,10 @@ class ComposerStaticInit91b3fec840a28a19a85ffaa5ed920f52
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
-            $loader->prefixLengthsPsr4 = ComposerStaticInit91b3fec840a28a19a85ffaa5ed920f52::$prefixLengthsPsr4;
-            $loader->prefixDirsPsr4 = ComposerStaticInit91b3fec840a28a19a85ffaa5ed920f52::$prefixDirsPsr4;
-            $loader->prefixesPsr0 = ComposerStaticInit91b3fec840a28a19a85ffaa5ed920f52::$prefixesPsr0;
-            $loader->classMap = ComposerStaticInit91b3fec840a28a19a85ffaa5ed920f52::$classMap;
+            $loader->prefixLengthsPsr4 = ComposerStaticInit1f4b754aedd8f0c56f87808cd85fcf62::$prefixLengthsPsr4;
+            $loader->prefixDirsPsr4 = ComposerStaticInit1f4b754aedd8f0c56f87808cd85fcf62::$prefixDirsPsr4;
+            $loader->prefixesPsr0 = ComposerStaticInit1f4b754aedd8f0c56f87808cd85fcf62::$prefixesPsr0;
+            $loader->classMap = ComposerStaticInit1f4b754aedd8f0c56f87808cd85fcf62::$classMap;
 
         }, null, ClassLoader::class);
     }
