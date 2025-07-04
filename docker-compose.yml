@@ -8,9 +8,9 @@ services:
     ports:
       - "80:80"
     volumes:
-      - ./public:/var/www/html/public
-      - ./docker/ngnix/nginx.conf:/etc/nginx/nginx.conf
-      - ./docker/ngnix/conf.d:/etc/nginx/conf.d
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./docker/nginx/conf.d/:/etc/nginx/conf.d/
+      - ./public:/var/www/html
     depends_on:
       - php_fpm
     networks:
