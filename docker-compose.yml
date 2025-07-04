@@ -36,7 +36,7 @@ volumes:
       - ./docker/nginx/conf.d/:/etc/nginx/conf.d/
       - ./public:/var/www/html
     depends_on:
-      - laravel_php_fpm
+      - php_fpm
     networks:
       - bridge
 
