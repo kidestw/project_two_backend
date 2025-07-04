@@ -12,11 +12,11 @@ services:
       - ./docker/nginx/conf.d/:/etc/nginx/conf.d/
       - ./public:/var/www/html
     depends_on:
-      - php_fpm
+      - php-fpm
     networks:
       - bridge
 
-  php_fpm:
+  php-fpm:
     build:
       context: .
       dockerfile: Dockerfile
