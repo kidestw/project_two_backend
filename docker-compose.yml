@@ -1,5 +1,31 @@
 
+
 services:
+  db:
+    image: mysql:8.0
+    container_name: clms_mysql_database
+    restart: unless-stopped
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_DATABASE: clms_db
+      MYSQL_ROOT_PASSWORD:
+    volumes:
+      - db_data:/var/lib/mysql
+volumes:
+  db_data:
+
+
+  php-fpm:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: clms_laravel_php_fpm
+    restart: unless-stopped
+    volumes:
+      - .:/var/www
+    depends_on:
+      - db
   nginx:
     image: nginx:latest
     container_name: clms_nginx_web
@@ -14,28 +40,4 @@ services:
     networks:
       - bridge
 
-  php-fpm:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: clms_laravel_php_fpm
-    restart: unless-stopped
-    volumes:
-      - .:/var/www
-    depends_on:
-      - db
 
-  db:
-    image: mysql:8.0
-    container_name: clms_mysql_database
-    restart: unless-stopped
-    ports:
-      - "3306:3306"
-    environment:
-      MYSQL_DATABASE: clms_db
-      MYSQL_ROOT_PASSWORD:
-    volumes:
-      - db_data:/var/lib/mysql
-
-volumes:
-  db_data:
