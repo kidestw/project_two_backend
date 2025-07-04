@@ -1,22 +1,22 @@
-version: '3.8'
+version: "3.8"
 
 services:
 
-nginx:
-  image: nginx:latest
-  container_name: clms_nginx_web
-  ports:
-    - "80:80"
-  volumes:
-    - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf
-    - ./docker/nginx/conf.d:/etc/nginx/conf.d
-    - ./public:/var/www/html
-  depends_on:
-    - php-fpm
-  networks:
-    - bridge
+  nginx:
+    image: nginx:latest
+    container_name: clms_nginx_web
+    ports:
+      - "80:80"
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d
+      - ./public:/var/www/html
+    depends_on:
+      - php_fpm
+    networks:
+      - bridge
 
-  php-fpm:
+  php_fpm:
     build:
       context: .
       dockerfile: Dockerfile
