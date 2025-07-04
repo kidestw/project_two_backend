@@ -1,16 +1,15 @@
 version: "3.8"
 
 services:
-
   nginx:
     image: nginx:latest
     container_name: clms_nginx_web
     ports:
       - "80:80"
     volumes:
-      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf
-      - ./docker/nginx/conf.d/:/etc/nginx/conf.d/
-      - ./public:/var/www/html
+      - ./docker/ngnix/nginx.conf:/etc/nginx/nginx.conf
+      - ./docker/ngnix/conf.d/:/etc/nginx/conf.d/
+      - ./public:/var/www/html/public
     depends_on:
       - php-fpm
     networks:
@@ -37,7 +36,7 @@ services:
       - "3306:3306"
     environment:
       MYSQL_DATABASE: clms_db
-      MYSQL_ROOT_PASSWORD:
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
     volumes:
       - db_data:/var/lib/mysql
     networks:
