@@ -8,9 +8,9 @@ services:
     ports:
       - "80:80"
     volumes:
-      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf
-      - ./docker/nginx/conf.d:/etc/nginx/conf.d
-      - ./public:/var/www/html
+      - ./public:/var/www/html/public
+      - ./docker/ngnix/nginx.conf:/etc/nginx/nginx.conf
+      - ./docker/ngnix/conf.d:/etc/nginx/conf.d
     depends_on:
       - php_fpm
     networks:
@@ -23,7 +23,7 @@ services:
     container_name: clms_laravel_php_fpm
     restart: unless-stopped
     volumes:
-      - .:/var/www
+      - .:/var/www/html
     depends_on:
       - db
     networks:
