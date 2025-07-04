@@ -1,4 +1,4 @@
-
+version: '3.8'
 
 services:
 
@@ -12,10 +12,9 @@ services:
       - ./docker/nginx/conf.d/:/etc/nginx/conf.d/
       - ./public:/var/www/html
     depends_on:
-      - php_fpm
+      - php-fpm  # ✅ match the actual service name
     networks:
       - bridge
-
 
   php-fpm:
     build:
@@ -27,6 +26,9 @@ services:
       - .:/var/www
     depends_on:
       - db
+    networks:
+      - bridge
+
   db:
     image: mysql:8.0
     container_name: clms_mysql_database
@@ -38,8 +40,12 @@ services:
       MYSQL_ROOT_PASSWORD:
     volumes:
       - db_data:/var/lib/mysql
+    networks:
+      - bridge
+
 volumes:
   db_data:
 
-
-
+networks:
+  bridge:
+    driver: bridge
